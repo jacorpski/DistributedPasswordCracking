@@ -30,10 +30,13 @@ namespace PasswordCrackerCentralized
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
+            
             List<UserInfo> userInfos =
                 PasswordFileHandler.ReadPasswordFile("passwords.txt");
             List<UserInfoClearText> result = new List<UserInfoClearText>();
+            // Her skal den 1. Tread være (højstsansynligt) 
             using (FileStream fs = new FileStream("webster-dictionary.txt", FileMode.Open, FileAccess.Read))
+            // Her skal den 2. Thread være (højstsansynligt) og måske 3.
             using (StreamReader dictionary = new StreamReader(fs))
             {
                 while (!dictionary.EndOfStream)
@@ -107,6 +110,9 @@ namespace PasswordCrackerCentralized
         /// <param name="userInfos"></param>
         /// <param name="possiblePassword">List of (username, encrypted password) pairs from the password file</param>
         /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
+       
+
+        // her skal 4. Thread være
         private IEnumerable<UserInfoClearText> CheckSingleWord(IEnumerable<UserInfo> userInfos, String possiblePassword)
         {
             char[] charArray = possiblePassword.ToCharArray();
@@ -119,6 +125,7 @@ namespace PasswordCrackerCentralized
             {
                 if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))
                 {
+                    // her skal 5. Thread være
                     results.Add(new UserInfoClearText(userInfo.Username, possiblePassword));
                     Console.WriteLine(userInfo.Username + " " + possiblePassword);
                 }
