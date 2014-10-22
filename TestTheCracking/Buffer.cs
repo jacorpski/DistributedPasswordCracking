@@ -9,12 +9,12 @@ namespace TestTheCracking
 {
     public class Buffer
     {
-        private ConcurrentQueue<int> sharedBuffer = new ConcurrentQueue<int>();
+        private BlockingCollection<int> sharedBuffer = new BlockingCollection<int>(10);
 
 
-        public void Put(int value)
+        public bool Put(int value)
         {
-            sharedBuffer.Enqueue(value);
+            return sharedBuffer.TryAdd(value);
         }
 
         public int Take()
@@ -22,12 +22,10 @@ namespace TestTheCracking
             int value;
             int outValue = -1;
 
-            if (!IsEmpty())
+            
+            if (sharedBuffer.TryTake(out value))
             {
-                if (sharedBuffer.TryDequeue(out value))
-                {
-                    outValue = value;
-                }
+                outValue = value;
             }
 
             return outValue;

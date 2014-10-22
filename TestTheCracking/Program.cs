@@ -29,23 +29,34 @@ namespace TestTheCracking
             {
                 Console.WriteLine(sharedBuffer2.Take());
             }
+
+            Console.ReadLine();
         }
 
         static void Stage1Buffer(Buffer sharedBufferIn)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 20; i++)
             {
                 int randomNumber = random.Next();
 
-                Console.WriteLine("Stage 1: " + randomNumber);
 
-                sharedBufferIn.Put(randomNumber);
+
+                if (sharedBufferIn.Put(randomNumber))
+                {
+                    Console.WriteLine("Stage 1: " + randomNumber);
+                }
+                else
+                {
+                    Console.WriteLine("Stage 1: Buffer is full");
+                }
             }
+
+            
         }
 
         static void Stage2Buffer(Buffer sharedBufferOut, Buffer sharedBufferIn)
         {
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 20; i++)
             {
                 int buffer = sharedBufferOut.Take();
 
