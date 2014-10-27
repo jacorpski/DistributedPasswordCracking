@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TheRealCracking
 {
@@ -10,15 +10,12 @@ namespace TheRealCracking
     {
         static void Main(string[] args)
         {
-            Buffer sharedBuffer1 = new Buffer(10);
-            Buffer sharedBuffer2 = new Buffer(10);
-            Buffer sharedBuffer3 = new Buffer(10);
+            Cracking cracker = new Cracking();
 
-            TaskFactory f = new TaskFactory();
+            cracker.RunCracking();
 
 
-
-
+            Console.ReadLine();
         }
     }
 }

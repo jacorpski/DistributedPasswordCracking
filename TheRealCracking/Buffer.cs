@@ -18,7 +18,7 @@ namespace TheRealCracking
 
         public bool Put(string value)
         {
-            return sharedBuffer.TryAdd(value);
+            return sharedBuffer.TryAdd(value, -1);
         }
 
         public string Take()
