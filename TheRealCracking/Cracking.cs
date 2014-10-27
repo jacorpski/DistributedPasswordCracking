@@ -27,11 +27,10 @@ namespace TheRealCracking
         {
             _messageDigest = new SHA1CryptoServiceProvider();
         }
+        
 
-        // Run the cracking program
         public void RunCracking()
         {
-            // Read the dictionary file, and put it into a variable
             ReadDictionary();
 
             TaskFactory f = new TaskFactory();
