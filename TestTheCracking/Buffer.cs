@@ -11,7 +11,6 @@ namespace TestTheCracking
     {
         private BlockingCollection<int> sharedBuffer = new BlockingCollection<int>(10);
 
-
         public bool Put(int value)
         {
             return sharedBuffer.TryAdd(value);
@@ -22,7 +21,7 @@ namespace TestTheCracking
             int value;
             int outValue = -1;
 
-            
+
             if (sharedBuffer.TryTake(out value))
             {
                 outValue = value;
