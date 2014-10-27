@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,9 +41,11 @@ namespace TheRealCracking
 
             // The stages the program are going to use
             var ReadAllStringsStage = f.StartNew(() => ReadAllStrings(dictionaryFile, BufferOfStrings));
+            var EncryptedStringsStage = f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings));
 
             // We need to wait on all stages before we can continue
-            Task.WaitAll(ReadAllStringsStage);
+            Task.WaitAll(ReadAllStringsStage, EncryptedStringsStage);
+            
 
             // Close the dictionary file
             dictionaryFile.Close();
@@ -73,6 +76,27 @@ namespace TheRealCracking
                     }
                 }
             }
+
+            sharedBuffer.MarkCompleted();
+        }
+
+        private void EncryptedStrings(Buffer sharedBufferOut, Buffer sharedBufferIn)
+        {
+            while (!sharedBufferOut.IsCompleted())
+            {
+                string temp = sharedBufferOut.Take();
+
+                string tempEncrypted =
+                    System.Convert.ToBase64String(_messageDigest.ComputeHash(Encoding.Unicode.GetBytes(temp)));
+                
+                if (sharedBufferIn.Put(tempEncrypted))
+                {
+                    Console.WriteLine("Take out: "+ temp +" , encrypted it to: "+ tempEncrypted +"  and then added it to BufferOfEncryptedStrings");
+                }
+            }
+
+            sharedBufferIn.MarkCompleted();
+            
         }
     }
 }

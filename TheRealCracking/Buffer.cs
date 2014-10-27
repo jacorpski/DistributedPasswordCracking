@@ -44,5 +44,15 @@ namespace TheRealCracking
         {
             return sharedBuffer.Count;
         }
+
+        public void MarkCompleted()
+        {
+            sharedBuffer.CompleteAdding();
+        }
+
+        public bool IsCompleted()
+        {
+            return sharedBuffer.IsAddingCompleted;
+        }
     }
 }
