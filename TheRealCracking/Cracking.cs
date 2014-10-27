@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace TheRealCracking
 {
@@ -31,6 +32,8 @@ namespace TheRealCracking
 
         public void RunCracking()
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             ReadDictionary();
 
             TaskFactory f = new TaskFactory();
@@ -43,6 +46,9 @@ namespace TheRealCracking
 
             // Close the dictionary file
             dictionaryFile.Close();
+
+            stopwatch.Stop();
+            Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
         }
 
         private void ReadDictionary()
