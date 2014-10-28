@@ -27,7 +27,7 @@ namespace TheRealCracking
             string outValue = "";
 
 
-            if (sharedBuffer.TryTake(out value))
+            if (sharedBuffer.TryTake(out value, -1))
             {
                 outValue = value;
             }
