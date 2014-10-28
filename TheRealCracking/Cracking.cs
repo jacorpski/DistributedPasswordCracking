@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,9 +49,11 @@ namespace TheRealCracking
             var ReadAllStringsStage = f.StartNew(() => ReadAllStrings(dictionaryFile, BufferOfStrings));
             var EncryptedStringsStage = f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings));
             var CompareStringsStage = f.StartNew(() => CompareStrings(BufferOfEncryptedStrings, BufferOfMatches));
+            var PrintMatchesStage = f.StartNew(() => PrintMatches(BufferOfMatches));
+
 
             // We need to wait on all stages before we can continue
-            Task.WaitAll(ReadAllStringsStage, EncryptedStringsStage, CompareStringsStage);
+            Task.WaitAll(ReadAllStringsStage, EncryptedStringsStage, CompareStringsStage, PrintMatchesStage);
             
             // Close the dictionary file
             dictionaryFile.Close();
@@ -62,7 +65,7 @@ namespace TheRealCracking
         private void ReadDictionary()
         {
             // Open and read the dictionary
-            dictionaryFile = new FileStream("webster-dictionary.txt", FileMode.Open, FileAccess.Read);
+            dictionaryFile = new FileStream("webster-dictionary_original.txt", FileMode.Open, FileAccess.Read);
         }
 
         private void ReadPasswords()
@@ -90,18 +93,13 @@ namespace TheRealCracking
                     // Temporary place for the string
                     String put = temp.ReadLine();
 
-                    if (sharedBuffer.Put(put))
-                    {
-                        //Console.WriteLine("Added " + put + " to BufferOfStrings");
-                    }
+                    sharedBuffer.Put(put);
 
                     i++;
                 }
             }
 
             Console.WriteLine("Lines in the file: "+ i);
-
-            //Console.WriteLine("BufferOfStrings: "+ sharedBuffer.getCount());
 
             sharedBuffer.MarkCompleted();
         }
@@ -115,13 +113,18 @@ namespace TheRealCracking
 
                 if (temp != "")
                 {
-                    byte[] tempByted = Array.ConvertAll(temp.ToCharArray(), GetConverter());
-                    byte[] tempBytedEncrypted = _messageDigest.ComputeHash(tempByted);
-                    string tempBytedEncryptedStringed = Convert.ToBase64String(tempBytedEncrypted);
+                    List<String> tempVariations = MadePasswordVariations(temp);
 
-                    sharedBufferIn.Put(temp + ":" + tempBytedEncryptedStringed);
+                    foreach (string password in tempVariations)
+                    {
+                        byte[] passwordByted = Array.ConvertAll(password.ToCharArray(), GetConverter());
+                        byte[] passwordBytedEncrypted = _messageDigest.ComputeHash(passwordByted);
+                        string passwordBytedEncryptedStringed = Convert.ToBase64String(passwordBytedEncrypted);
 
-                    i++;
+                        sharedBufferIn.Put(password + ":" + passwordBytedEncryptedStringed);
+
+                        i++;
+                    }
                 }
             }
 
@@ -142,35 +145,77 @@ namespace TheRealCracking
                 {
                     string[] tempSplit = temp.Split(':');
 
-                    Console.WriteLine(tempSplit[0] +" er i krypteret form "+ tempSplit[1]);
-
                     foreach (String password in passwordList)
                     {
                         string[] passwordSplit = password.Split(':');
 
                         if (tempSplit[1].Equals(passwordSplit[1]))
                         {
-                            Console.WriteLine(passwordSplit[0] +" password is "+ tempSplit[0]);
+                            //Console.WriteLine(passwordSplit[0] +" password is "+ tempSplit[0]);
+
+                            sharedBufferIn.Put(passwordSplit[0] + ":" + tempSplit[0]);
                         }
                     }
-
-
-
-
-
-
-
-                    sharedBufferIn.Put(temp);
 
                     i++;
                 }
             }
 
             Console.WriteLine("CompareStrings Rounds: " + i);
-            Console.WriteLine("CompareStrings: " + sharedBufferIn.getCount());
-            Console.WriteLine("");
 
-            Console.WriteLine("End");
+            sharedBufferIn.MarkCompleted();
+        }
+
+        private void PrintMatches(Buffer sharedBuffer)
+        {
+            while (!sharedBuffer.IsCompleted() || !sharedBuffer.IsEmpty())
+            {
+                string temp = sharedBuffer.Take();
+
+                if (temp != "")
+                {
+                    Console.WriteLine("MATCHTES: " + temp);
+                }
+            }
+        }
+
+        private List<String> MadePasswordVariations(string password)
+        {
+            List<String> temp = new List<string>();
+
+            temp.Add(password);
+
+            String passwordUpperCase = password.ToUpper();
+            temp.Add(passwordUpperCase);
+
+            String passwordCapitalized = StringUtilities.Capitalize(password);
+            temp.Add(passwordCapitalized);
+
+            String passwordReverse = StringUtilities.Reverse(password);
+            temp.Add(passwordReverse);
+
+            for (int i = 0; i < 100; i++)
+            {
+                String passwordEndDigit = password + i;
+                temp.Add(passwordEndDigit);
+            }
+
+            for (int i = 0; i < 100; i++)
+            {
+                String passwordStartDigit = i + password;
+                temp.Add(passwordStartDigit);
+            }
+
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    String passwordStartEndDigit = i + password + j;
+                    temp.Add(passwordStartEndDigit);
+                }
+            }
+
+            return temp;
         }
 
         public static Converter<char, byte> GetConverter()

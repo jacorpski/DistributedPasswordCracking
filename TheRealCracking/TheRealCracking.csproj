@@ -50,6 +50,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="StringUtilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
