@@ -16,6 +16,8 @@ namespace TheRealCracking
         // Contain the hash algorithm we choose to use
         private readonly HashAlgorithm _messageDigest;
 
+        private static readonly Converter<char, byte> Converter = CharToByte;
+
         // All the buffers we need
         private Buffer BufferOfStrings          = new Buffer(1000000);
         private Buffer BufferOfEncryptedStrings = new Buffer(1000000);
@@ -23,6 +25,8 @@ namespace TheRealCracking
 
         // Hold the dictionary file
         private FileStream dictionaryFile;
+
+        private List<String> passwordList = new List<string>(); 
 
         // Constructor - set the hash algorithm to use
         public Cracking()
@@ -36,6 +40,7 @@ namespace TheRealCracking
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             ReadDictionary();
+            ReadPasswords();
 
             TaskFactory f = new TaskFactory();
 
@@ -58,6 +63,20 @@ namespace TheRealCracking
         {
             // Open and read the dictionary
             dictionaryFile = new FileStream("webster-dictionary.txt", FileMode.Open, FileAccess.Read);
+        }
+
+        private void ReadPasswords()
+        {
+            using (FileStream fs = new FileStream("passwords.txt", FileMode.Open, FileAccess.Read))
+            {
+                using (StreamReader passwords = new StreamReader(fs))
+                {
+                    while (!passwords.EndOfStream)
+                    {
+                        passwordList.Add(passwords.ReadLine());
+                    }
+                }
+            }
         }
 
         private void ReadAllStrings(FileStream dictionary, Buffer sharedBuffer)
@@ -96,7 +115,7 @@ namespace TheRealCracking
 
                 if (temp != "")
                 {
-                    byte[] tempByted = Encoding.Unicode.GetBytes(temp);
+                    byte[] tempByted = Array.ConvertAll(temp.ToCharArray(), GetConverter());
                     byte[] tempBytedEncrypted = _messageDigest.ComputeHash(tempByted);
                     string tempBytedEncryptedStringed = Convert.ToBase64String(tempBytedEncrypted);
 
@@ -125,7 +144,15 @@ namespace TheRealCracking
 
                     Console.WriteLine(tempSplit[0] +" er i krypteret form "+ tempSplit[1]);
 
+                    foreach (String password in passwordList)
+                    {
+                        string[] passwordSplit = password.Split(':');
 
+                        if (tempSplit[1].Equals(passwordSplit[1]))
+                        {
+                            Console.WriteLine(passwordSplit[0] +" password is "+ tempSplit[0]);
+                        }
+                    }
 
 
 
@@ -144,6 +171,16 @@ namespace TheRealCracking
             Console.WriteLine("");
 
             Console.WriteLine("End");
+        }
+
+        public static Converter<char, byte> GetConverter()
+        {
+            return Converter;
+        }
+
+        private static byte CharToByte(char ch)
+        {
+            return Convert.ToByte(ch);
         }
     }
 }
