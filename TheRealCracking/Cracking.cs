@@ -145,17 +145,32 @@ namespace TheRealCracking
                 {
                     string[] tempSplit = temp.Split(':');
 
+                    List<String> tempRemove = new List<string>();
+
                     foreach (String password in passwordList)
                     {
                         string[] passwordSplit = password.Split(':');
 
                         if (tempSplit[1].Equals(passwordSplit[1]))
                         {
-                            //Console.WriteLine(passwordSplit[0] +" password is "+ tempSplit[0]);
-
                             sharedBufferIn.Put(passwordSplit[0] + ":" + tempSplit[0]);
+
+                            tempRemove.Add(password);
                         }
                     }
+
+                    if (tempRemove.Count > 0)
+                    {
+                        foreach (string removePassword in tempRemove)
+                        {
+                            passwordList.Remove(removePassword);
+                        }
+
+                        tempRemove.Clear();
+
+                        Console.WriteLine(passwordList.Count);
+                    }
+
 
                     i++;
                 }
