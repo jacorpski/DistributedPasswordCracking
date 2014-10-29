@@ -14,25 +14,29 @@ namespace TheRealCracking
 {
     public class Cracking
     {
-        // Contain the hash algorithm we choose to use
-        private readonly HashAlgorithm _messageDigest;
 
         private static readonly Converter<char, byte> Converter = CharToByte;
 
         // All the buffers we need
-        private Buffer BufferOfStrings          = new Buffer(1000000);
-        private Buffer BufferOfEncryptedStrings = new Buffer(1000000);
-        private Buffer BufferOfMatches          = new Buffer(1000000);
+        private Buffer BufferOfStrings          = new Buffer(51000);
+        private Buffer BufferOfEncryptedStrings = new Buffer(10000000);
+        private Buffer BufferOfMatches          = new Buffer(10);
 
         // Hold the dictionary file
         private FileStream dictionaryFile;
 
-        private List<String> passwordList = new List<string>(); 
+        private int _encryptedStringsTasks = 0;
+        private int _encryptedStringsCompleted = 0;
+
+        private int _compareStringsTasks = 0;
+        private int _compareStringsCompleted = 0;
+
+        private List<Task> tasks = new List<Task>(); 
 
         // Constructor - set the hash algorithm to use
         public Cracking()
         {
-            _messageDigest = new SHA1CryptoServiceProvider();
+            
         }
         
 
@@ -41,19 +45,22 @@ namespace TheRealCracking
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             ReadDictionary();
-            ReadPasswords();
+            
 
             TaskFactory f = new TaskFactory();
 
             // The stages the program are going to use
-            var ReadAllStringsStage = f.StartNew(() => ReadAllStrings(dictionaryFile, BufferOfStrings));
-            var EncryptedStringsStage = f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings));
-            var CompareStringsStage = f.StartNew(() => CompareStrings(BufferOfEncryptedStrings, BufferOfMatches));
-            var PrintMatchesStage = f.StartNew(() => PrintMatches(BufferOfMatches));
+            tasks.Add(f.StartNew(() => ReadAllStrings(dictionaryFile, BufferOfStrings)));
+            tasks.Add(f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings)));
+            tasks.Add(f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings)));
+            tasks.Add(f.StartNew(() => EncryptedStrings(BufferOfStrings, BufferOfEncryptedStrings)));
+            tasks.Add(f.StartNew(() => CompareStrings(BufferOfEncryptedStrings, BufferOfMatches)));
+            tasks.Add(f.StartNew(() => CompareStrings(BufferOfEncryptedStrings, BufferOfMatches)));
+            tasks.Add(f.StartNew(() => PrintMatches(BufferOfMatches)));
 
 
             // We need to wait on all stages before we can continue
-            Task.WaitAll(ReadAllStringsStage, EncryptedStringsStage, CompareStringsStage, PrintMatchesStage);
+            Task.WaitAll(tasks.ToArray());
             
             // Close the dictionary file
             dictionaryFile.Close();
@@ -68,7 +75,7 @@ namespace TheRealCracking
             dictionaryFile = new FileStream("webster-dictionary_original.txt", FileMode.Open, FileAccess.Read);
         }
 
-        private void ReadPasswords()
+        /*private void ReadPasswords()
         {
             using (FileStream fs = new FileStream("passwords.txt", FileMode.Open, FileAccess.Read))
             {
@@ -80,10 +87,11 @@ namespace TheRealCracking
                     }
                 }
             }
-        }
+        }*/
 
         private void ReadAllStrings(FileStream dictionary, Buffer sharedBuffer)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
             int i = 0;
             using (StreamReader temp = new StreamReader(dictionary))
             {
@@ -102,10 +110,20 @@ namespace TheRealCracking
             Console.WriteLine("Lines in the file: "+ i);
 
             sharedBuffer.MarkCompleted();
+
+            stopwatch.Stop();
+            Console.WriteLine("ReadAllTheStrings time: {0}", stopwatch.Elapsed);
         }
 
         private void EncryptedStrings(Buffer sharedBufferOut, Buffer sharedBufferIn)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            _encryptedStringsTasks++;
+
+            HashAlgorithm _messageDigest;
+            _messageDigest = new SHA1CryptoServiceProvider();
+
             int i = 0;
             while (!sharedBufferOut.IsCompleted() || !sharedBufferOut.IsEmpty())
             {
@@ -128,14 +146,36 @@ namespace TheRealCracking
                 }
             }
 
-            Console.WriteLine("EncryptedStrings Rounds: "+ i);
+            _encryptedStringsCompleted++;
 
-            sharedBufferIn.MarkCompleted();
-            
+            if (_encryptedStringsCompleted == _encryptedStringsTasks)
+            {
+                sharedBufferIn.MarkCompleted();
+            }
+
+            stopwatch.Stop();
+            Console.WriteLine("EncryptedStrings time({0}): {1}", _encryptedStringsCompleted, stopwatch.Elapsed);
         }
 
         private void CompareStrings(Buffer sharedBufferOut, Buffer sharedBufferIn)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            _compareStringsTasks++;
+
+            List<String> passwordList = new List<string>();
+
+            using (FileStream fs = new FileStream("passwords.txt", FileMode.Open, FileAccess.Read))
+            {
+                using (StreamReader passwords = new StreamReader(fs))
+                {
+                    while (!passwords.EndOfStream)
+                    {
+                        passwordList.Add(passwords.ReadLine());
+                    }
+                }
+            }
+
             int i = 0;
             while (!sharedBufferOut.IsCompleted() || !sharedBufferOut.IsEmpty())
             {
@@ -167,8 +207,6 @@ namespace TheRealCracking
                         }
 
                         tempRemove.Clear();
-
-                        Console.WriteLine(passwordList.Count);
                     }
 
 
@@ -176,9 +214,15 @@ namespace TheRealCracking
                 }
             }
 
-            Console.WriteLine("CompareStrings Rounds: " + i);
+            _compareStringsCompleted++;
 
-            sharedBufferIn.MarkCompleted();
+            if (_compareStringsCompleted == _compareStringsTasks)
+            {
+                sharedBufferIn.MarkCompleted();
+            }
+
+            stopwatch.Stop();
+            Console.WriteLine("CompareStrings time({0}): {1}", _compareStringsCompleted, stopwatch.Elapsed);
         }
 
         private void PrintMatches(Buffer sharedBuffer)
@@ -189,7 +233,7 @@ namespace TheRealCracking
 
                 if (temp != "")
                 {
-                    Console.WriteLine("MATCHTES: " + temp);
+                    Console.WriteLine("MATCHES: " + temp);
                 }
             }
         }
