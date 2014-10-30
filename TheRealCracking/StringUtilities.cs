@@ -6,6 +6,11 @@ namespace TheRealCracking
 {
     class StringUtilities
     {
+        /// <summary>
+        /// Capitalized the string
+        /// </summary>
+        /// <param name="str">The string that need to be capitalized</param>
+        /// <returns>The capitalized string</returns>
         public static String Capitalize(String str)
         {
             if (str == null)
@@ -21,6 +26,11 @@ namespace TheRealCracking
             return firstLetterUppercase + theRest;
         }
 
+        /// <summary>
+        /// Reserved the string
+        /// </summary>
+        /// <param name="str">The string that need to be reserved</param>
+        /// <returns>The reserved string</returns>
         public static String Reverse(String str)
         {
             if (str == null)

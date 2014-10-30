@@ -14,23 +14,51 @@ namespace TheRealCracking
 {
     public class Cracking
     {
-
         private static readonly Converter<char, byte> Converter = CharToByte;
 
-        // All the buffers we need
+        /// <summary>
+        /// The buffer which holds all the strings from the dictionary file
+        /// </summary>
         private Buffer BufferOfStrings          = new Buffer(51000);
+
+        /// <summary>
+        /// The buffer which holds all the encrypted string from the string buffer
+        /// </summary>
         private Buffer BufferOfEncryptedStrings = new Buffer(10000000);
+
+        /// <summary>
+        /// The buffer which holds all the matches
+        /// </summary>
         private Buffer BufferOfMatches          = new Buffer(10);
 
-        // Hold the dictionary file
+        /// <summary>
+        /// Holds the dictionary file
+        /// </summary>
         private FileStream dictionaryFile;
 
+        /// <summary>
+        /// Holds the number of tasks that are running the encrypt string task
+        /// </summary>
         private int _encryptedStringsTasks = 0;
+
+        /// <summary>
+        /// Holds the number of tasks that have completed the encrypt string task
+        /// </summary>
         private int _encryptedStringsCompleted = 0;
 
+        /// <summary>
+        /// Holds the number of tasks that are running the compare task
+        /// </summary>
         private int _compareStringsTasks = 0;
+
+        /// <summary>
+        /// Holds the number of tasks that have completed the compare task
+        /// </summary>
         private int _compareStringsCompleted = 0;
 
+        /// <summary>
+        /// Holds all the tasks
+        /// </summary>
         private List<Task> tasks = new List<Task>(); 
 
         // Constructor - set the hash algorithm to use
@@ -39,7 +67,9 @@ namespace TheRealCracking
             
         }
         
-
+        /// <summary>
+        /// Run the whole cracking stage
+        /// </summary>
         public void RunCracking()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -69,26 +99,20 @@ namespace TheRealCracking
             Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
         }
 
+        /// <summary>
+        /// Read the dictionary file
+        /// </summary>
         private void ReadDictionary()
         {
             // Open and read the dictionary
-            dictionaryFile = new FileStream("webster-dictionary_original.txt", FileMode.Open, FileAccess.Read);
+            dictionaryFile = new FileStream("webster-dictionary.txt", FileMode.Open, FileAccess.Read);
         }
 
-        /*private void ReadPasswords()
-        {
-            using (FileStream fs = new FileStream("passwords.txt", FileMode.Open, FileAccess.Read))
-            {
-                using (StreamReader passwords = new StreamReader(fs))
-                {
-                    while (!passwords.EndOfStream)
-                    {
-                        passwordList.Add(passwords.ReadLine());
-                    }
-                }
-            }
-        }*/
-
+        /// <summary>
+        /// Read all the strings from the dictionary file and put them in the buffer
+        /// </summary>
+        /// <param name="dictionary">The dictionary file</param>
+        /// <param name="sharedBuffer">The buffer where the lines of the dictionary should be in</param>
         private void ReadAllStrings(FileStream dictionary, Buffer sharedBuffer)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -115,6 +139,11 @@ namespace TheRealCracking
             Console.WriteLine("ReadAllTheStrings time: {0}", stopwatch.Elapsed);
         }
 
+        /// <summary>
+        /// Takes out all the strings from the buffer and encrypt them and then put them into a new buffer.
+        /// </summary>
+        /// <param name="sharedBufferOut">The buffer where the strings should be taken out from</param>
+        /// <param name="sharedBufferIn">The buffer where the encrypted strings should be put in</param>
         private void EncryptedStrings(Buffer sharedBufferOut, Buffer sharedBufferIn)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -157,6 +186,11 @@ namespace TheRealCracking
             Console.WriteLine("EncryptedStrings time({0}): {1}", _encryptedStringsCompleted, stopwatch.Elapsed);
         }
 
+        /// <summary>
+        /// Takes out the encrypted strings and compare them with password file, and if theres a hit, then put them into a new buffer
+        /// </summary>
+        /// <param name="sharedBufferOut">The buffer where the encrypted strings should be taken from</param>
+        /// <param name="sharedBufferIn">The buffer where the hits of password and encrypted string should be put in</param>
         private void CompareStrings(Buffer sharedBufferOut, Buffer sharedBufferIn)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -225,6 +259,10 @@ namespace TheRealCracking
             Console.WriteLine("CompareStrings time({0}): {1}", _compareStringsCompleted, stopwatch.Elapsed);
         }
 
+        /// <summary>
+        /// Takes the results from the buffer, and prints them out.
+        /// </summary>
+        /// <param name="sharedBuffer"></param>
         private void PrintMatches(Buffer sharedBuffer)
         {
             while (!sharedBuffer.IsCompleted() || !sharedBuffer.IsEmpty())
@@ -238,6 +276,11 @@ namespace TheRealCracking
             }
         }
 
+        /// <summary>
+        /// Takes the password and make different variations out of it
+        /// </summary>
+        /// <param name="password">The password where the variations should be make out from</param>
+        /// <returns></returns>
         private List<String> MadePasswordVariations(string password)
         {
             List<String> temp = new List<string>();
